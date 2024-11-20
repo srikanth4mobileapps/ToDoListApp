@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -23,11 +22,8 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -36,26 +32,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.sri.todolistapp.R
-import com.sri.todolistapp.data.room.TodoItem
 import com.sri.todolistapp.ui.theme.toolbarColor
-import com.sri.todolistapp.ui.viewmodels.ToDoListViewModel
-import kotlinx.coroutines.delay
+import com.sri.todolistapp.ui.viewmodels.AddItemViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddItemScreen(navController: NavController, viewModel: ToDoListViewModel) {
-    var text by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
+fun AddItemScreen(navController: NavController, viewModel: AddItemViewModel) {
+    val inputText by viewModel.inputText.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    // Handle side effects like delays and navigation
-    if (isLoading) {
-        LaunchedEffect(Unit) {
-            delay(3000) // Simulate a loading operation
-            isLoading = false
-            navController.popBackStack()
-        }
-    }
     Scaffold(topBar = {
         TopAppBar(
             title = {
@@ -83,17 +68,6 @@ fun AddItemScreen(navController: NavController, viewModel: ToDoListViewModel) {
         Box(modifier = Modifier.padding(paddingValues)) {
             ElevatedCard(modifier = Modifier.padding(16.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    if (errorMessage.isNotEmpty()) {
-                        AlertDialog(
-                            onDismissRequest = { errorMessage = "" },
-                            title = { Text("Error") },
-                            text = { Text(errorMessage) },
-                            confirmButton = {
-                                Button(onClick = { errorMessage = "" }) { Text("OK") }
-                            }
-                        )
-                    }
-
                     TextField(
                         colors = TextFieldDefaults.colors(
                             cursorColor = toolbarColor,
@@ -102,8 +76,8 @@ fun AddItemScreen(navController: NavController, viewModel: ToDoListViewModel) {
                             focusedTextColor = Color.Black,
                             unfocusedTextColor = Color.Black
                         ),
-                        value = text,
-                        onValueChange = { text = it },
+                        value = inputText,
+                        onValueChange = { viewModel.updateInputText(it) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text(
@@ -118,14 +92,13 @@ fun AddItemScreen(navController: NavController, viewModel: ToDoListViewModel) {
 
                     Button(
                         onClick = {
-                            if (text == "Error") {
-                                errorMessage = "Failed to add TODO"
-                            } else {
-                                isLoading = true
-                                viewModel.addTodoItem(TodoItem(text = text))
-                            }
+                            viewModel.addTodo(
+                                onSuccess = { navController.popBackStack() },
+                                onError = { navController.popBackStack() }
+                            )
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = inputText.isNotBlank() && !isLoading // Disable button if input is blank or loading
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
@@ -143,7 +116,8 @@ fun AddItemScreen(navController: NavController, viewModel: ToDoListViewModel) {
                     }
                 }
             }
+
+
         }
     }
-
 }

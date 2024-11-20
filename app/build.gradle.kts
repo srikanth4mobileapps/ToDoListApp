@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.hilt.android.gradle.plugin)
 }
 
 android {
@@ -54,6 +55,13 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.material.icons.extended)
+
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
+    kapt(libs.hilt.compiler)
+    kapt(libs.androidx.hilt.compiler)
+    //implementation(libs.androidx.hilt.lifecycle.viewmodel)
+
     kapt(libs.androidx.room.compiler)
     implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
@@ -63,4 +71,10 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+}
+
+
+kapt {
+    correctErrorTypes = true
 }

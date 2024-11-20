@@ -1,12 +1,12 @@
 package com.sri.todolistapp.ui.viewmodels
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import android.util.Log
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sri.todolistapp.data.room.ToDoListDataBase
 import com.sri.todolistapp.data.room.TodoItem
 import com.sri.todolistapp.domain.repositoryImpl.TodoRepositoryImpl
-import kotlinx.coroutines.Dispatchers
+import com.sri.todolistapp.utils.EventMediator
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,34 +15,32 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-
+import javax.inject.Inject
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-class ToDoListViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val repositoryImpl: TodoRepositoryImpl
+@HiltViewModel
+class ToDoListViewModel @Inject constructor(
+    private val repositoryImpl: TodoRepositoryImpl,
+    private val eventMediator: EventMediator
+) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
-    val todoItems: StateFlow<List<TodoItem>>
+    val todoList: StateFlow<List<TodoItem>> = _searchQuery
+        .debounce(2000)
+        .flatMapLatest { query ->
+            repositoryImpl.searchTodoItems(query)
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Lazily,
+            emptyList()
+        )
 
-    init {
-        val dao = ToDoListDataBase.getDatabase(application).todoDao()
-        repositoryImpl = TodoRepositoryImpl(dao)
-
-        todoItems = _searchQuery
-            .debounce(2000)
-            .flatMapLatest { query -> repositoryImpl.searchTodoItems(query) }
-            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    }
-
-    fun setSearchQuery(query: String) {
+    fun updateSearchQuery(query: String) {
+        Log.d("ToDoListViewModel", "Updating search query: $query")
         _searchQuery.value = query
     }
 
-    fun addTodoItem(todoItem: TodoItem) = viewModelScope.launch(Dispatchers.IO) {
-        repositoryImpl.insertTodoItem(todoItem)
-    }
 }

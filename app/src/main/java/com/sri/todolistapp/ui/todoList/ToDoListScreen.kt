@@ -1,5 +1,6 @@
 package com.sri.todolistapp.ui.todoList
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -24,6 +27,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,17 +39,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.sri.todolistapp.R
 import com.sri.todolistapp.ui.theme.floatingActionButtonColor
 import com.sri.todolistapp.ui.theme.toolbarColor
+import com.sri.todolistapp.ui.todoList.ErrorAlert
 import com.sri.todolistapp.ui.viewmodels.ToDoListViewModel
+import com.sri.todolistapp.utils.ToDoListScreenErrorEvent
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ToDoListScreen(navController: NavController, viewModel: ToDoListViewModel) {
-    val todoItems by viewModel.todoItems.collectAsState()
+fun ToDoListScreen(navController: NavController, viewModel: ToDoListViewModel = hiltViewModel()) {
+
+    val todoItems by viewModel.todoList.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
     Scaffold(
@@ -90,7 +101,7 @@ fun ToDoListScreen(navController: NavController, viewModel: ToDoListViewModel) {
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black
                     ),
-                    onValueChange = { viewModel.setSearchQuery(it) },
+                    onValueChange = { viewModel.updateSearchQuery(it) },
                     placeholder = {
                         Text(
                             text = "Search TODOs",
@@ -102,7 +113,10 @@ fun ToDoListScreen(navController: NavController, viewModel: ToDoListViewModel) {
             }
 
             if (searchQuery.isEmpty() && todoItems.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(text = stringResource(R.string.empty_screen_text))
                 }
             } else {
@@ -131,6 +145,6 @@ fun ToDoListScreen(navController: NavController, viewModel: ToDoListViewModel) {
                 }
             }
         }
-    }
 
+    }
 }
